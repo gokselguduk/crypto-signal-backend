@@ -8,32 +8,31 @@ var isScanning = false;
 var allSymbols = [];
 
 async function fetchAllSymbols() {
-  allSymbols = [
-    'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
-    'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT',
-    'MATICUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','NEARUSDT',
-    'FTMUSDT','ALGOUSDT','VETUSDT','ICPUSDT','FILUSDT',
-    'SANDUSDT','MANAUSDT','AXSUSDT','GALAUSDT','APEUSDT',
-    'OPUSDT','ARBUSDT','INJUSDT','SUIUSDT','SEIUSDT',
-    'TIAUSDT','WLDUSDT','FETUSDT','AGIXUSDT','RENDERUSDT',
-    'LDOUSDT','STXUSDT','RUNEUSDT','AAVEUSDT','CRVUSDT',
-    'MKRUSDT','COMPUSDT','SNXUSDT','DYDXUSDT','GMXUSDT',
-    'TRXUSDT','EOSUSDT','ETCUSDT','BCHUSDT','XMRUSDT',
-    'HBARUSDT','ZILUSDT','ONTUSDT','QTUMUSDT','OCEANUSDT',
-    'ANKRUSDT','SKLUSDT','AUDIOUSDT','FLOWUSDT','ROSEUSDT',
-    'IMXUSDT','LRCUSDT','MASKUSDT','ENSUSDT','JASMYUSDT',
-    'RVNUSDT','BALUSDT','BANDUSDT','KNCUSDT','STORJUSDT',
-    'SPELLUSDT','PERPUSDT','CFXUSDT','WOOUSDT','ICXUSDT',
-    'KAVAUSDT','IOTAUSDT','CELOUSDT','ALPHAUSDT','COTIUSDT',
-    'REQUSDT','OGNUSDT','KLAYUSDT','MINAUSDT','RNDRUSDT',
-    'LOOKSUSDT','BLURUSDT','STGUSDT','MAGICUSDT','HIGHUSDT',
-    'TUSDT','GALUSDT','IDUSDT','EDUUSDT','MNTUSDT',
-    'CYBERUSDT','ARKUSDT','FRONTUSDT','POWRUSDT','COMBOUSDT',
-    'WAXPUSDT','RIFUSDT','POLYXUSDT','GASUSDT','VIBUSDT'
-  ];
-  console.log('Binance TR parite sayisi: ' + allSymbols.length);
+  try {
+    var res = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
+      headers: { 'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY },
+      params: { limit: 300, convert: 'USDT' }
+    });
+    var coins = res.data.data;
+    var binanceSymbols = coins
+      .map(function(c) { return c.symbol + 'USDT'; })
+      .filter(function(s) {
+        var validChars = /^[A-Z0-9]+USDT$/.test(s);
+        return validChars;
+      });
+    allSymbols = binanceSymbols;
+    console.log('CMC Top 300 parite sayisi: ' + allSymbols.length);
+  } catch (err) {
+    console.error('CMC alinamadi:', err.message);
+    allSymbols = [
+      'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
+      'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT',
+      'MATICUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','NEARUSDT',
+      'TRXUSDT','EOSUSDT','ETCUSDT','BCHUSDT','XMRUSDT'
+    ];
+    console.log('Fallback liste kullaniliyor: ' + allSymbols.length);
+  }
 }
-
 function subscribe(callback) {
   subscribers.push(callback);
 }
