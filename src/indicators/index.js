@@ -1,4 +1,14 @@
-var rsiModule = require('./rsi');
+console.log('INDICATORS VERSION: 2.0 - SKOR AKTIF');
+try {
+  var testEma = require('./ema');
+  var testStoch = require('./stochRSI');
+  var testAtr = require('./atr');
+  console.log('EMA OK:', typeof testEma.detectTrend);
+  console.log('STOCH OK:', typeof testStoch.calculateStochRSI);
+  console.log('ATR OK:', typeof testAtr.calculateATR);
+} catch(e) {
+  console.log('MODULE HATASI:', e.message);
+}var rsiModule = require('./rsi');
 var macdModule = require('./macd');
 var bollModule = require('./bollinger');
 var emaModule = require('./ema');
