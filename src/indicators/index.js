@@ -39,24 +39,31 @@ function analyzeCandles(candles) {
   if (trend.strength <= -2) { signals.push({ type: 'SELL', reason: 'Guclu dusus: ' + trend.trend }); score -= 1; }
   if (sr.nearestSupport && sr.supportDistance < 1) { signals.push({ type: 'BUY', reason: 'Destek: ' + sr.nearestSupport }); score += 1; }
   if (sr.nearestResistance && sr.resistanceDistance < 1) { signals.push({ type: 'SELL', reason: 'Direnc: ' + sr.nearestResistance }); score -= 1; }
-  var overallSignal = 'NEUTRAL';
-  if (score >= 3) overallSignal = 'STRONG_BUY';
-  else if (score >= 1) overallSignal = 'BUY';
-  else if (score <= -3) overallSignal = 'STRONG_SELL';
-  else if (score <= -1) overallSignal = 'SELL';
+ var overallSignal = 'NEUTRAL';
+var signalStrength = 'NOTR';
+
+if (score >= 6) { overallSignal = 'STRONG_BUY'; signalStrength = 'COK_GUCLU_AL'; }
+else if (score >= 4) { overallSignal = 'STRONG_BUY'; signalStrength = 'GUCLU_AL'; }
+else if (score >= 2) { overallSignal = 'BUY'; signalStrength = 'ORTA_AL'; }
+else if (score >= 1) { overallSignal = 'BUY'; signalStrength = 'ZAYIF_AL'; }
+else if (score <= -6) { overallSignal = 'STRONG_SELL'; signalStrength = 'COK_GUCLU_SAT'; }
+else if (score <= -4) { overallSignal = 'STRONG_SELL'; signalStrength = 'GUCLU_SAT'; }
+else if (score <= -2) { overallSignal = 'SELL'; signalStrength = 'ORTA_SAT'; }
+else if (score <= -1) { overallSignal = 'SELL'; signalStrength = 'ZAYIF_SAT'; }
   return {
-    lastClose: lastClose,
-    rsi: lastRSI,
-    macd: lastMACD,
-    bollinger: lastBoll,
-    trend: trend,
-    stochRSI: { k: stochRSI.lastK, d: stochRSI.lastD },
-    atr: atr,
-    supportResistance: sr,
-    signals: signals,
-    score: score,
-    overallSignal: overallSignal
-  };
+  lastClose: lastClose,
+  rsi: lastRSI,
+  macd: lastMACD,
+  bollinger: lastBoll,
+  trend: trend,
+  stochRSI: { k: stochRSI.lastK, d: stochRSI.lastD },
+  atr: atr,
+  supportResistance: sr,
+  signals: signals,
+  score: score,
+  overallSignal: overallSignal,
+  signalStrength: signalStrength
+};
 }
 
 module.exports = { analyzeCandles: analyzeCandles };
