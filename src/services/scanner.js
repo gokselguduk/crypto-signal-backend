@@ -1,4 +1,3 @@
-var axios = require('axios');
 var binance = require('./binance');
 var indicators = require('../indicators');
 
@@ -8,51 +7,43 @@ var isScanning = false;
 var allSymbols = [];
 
 async function fetchAllSymbols() {
-  try {
-    var res = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
-      headers: { 'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY },
-      params: { limit: 200, convert: 'USDT' }
-    });
-    var coins = res.data.data;
-    var binanceSymbols = coins
-      .map(function(c) { return c.symbol + 'USDT'; })
-      .filter(function(s) {
-        var validChars = /^[A-Z0-9]+USDT$/.test(s);
-        return validChars;
-      });
-    allSymbols = binanceSymbols;
-    console.log('CMC Top 300 parite sayisi: ' + allSymbols.length);
-  } catch (err) {
-    console.error('CMC alinamadi:', err.message);
-    allSymbols = [
-  'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
-  'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT',
-  'MATICUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','NEARUSDT',
-  'FTMUSDT','ALGOUSDT','VETUSDT','ICPUSDT','FILUSDT',
-  'SANDUSDT','MANAUSDT','AXSUSDT','GALAUSDT','APEUSDT',
-  'OPUSDT','ARBUSDT','INJUSDT','SUIUSDT','SEIUSDT',
-  'TIAUSDT','WLDUSDT','FETUSDT','AGIXUSDT','RENDERUSDT',
-  'LDOUSDT','STXUSDT','RUNEUSDT','AAVEUSDT','CRVUSDT',
-  'MKRUSDT','COMPUSDT','SNXUSDT','DYDXUSDT','GMXUSDT',
-  'TRXUSDT','EOSUSDT','ETCUSDT','BCHUSDT','XMRUSDT',
-  'HBARUSDT','ZILUSDT','ONTUSDT','QTUMUSDT','OCEANUSDT',
-  'ANKRUSDT','SKLUSDT','AUDIOUSDT','FLOWUSDT','ROSEUSDT',
-  'IMXUSDT','LRCUSDT','MASKUSDT','ENSUSDT','JASMYUSDT',
-  'RVNUSDT','BALUSDT','BANDUSDT','KNCUSDT','STORJUSDT',
-  'SPELLUSDT','PERPUSDT','CFXUSDT','WOOUSDT','ICXUSDT',
-  'KAVAUSDT','IOTAUSDT','CELOUSDT','ALPHAUSDT','COTIUSDT',
-  'REQUSDT','OGNUSDT','KLAYUSDT','MINAUSDT','RNDRUSDT',
-  'LOOKSUSDT','BLURUSDT','STGUSDT','MAGICUSDT','HIGHUSDT',
-  'TUSDT','GALUSDT','IDUSDT','EDUUSDT','MNTUSDT',
-  'CYBERUSDT','ARKUSDT','FRONTUSDT','POWRUSDT','COMBOUSDT',
-  'WAXPUSDT','RIFUSDT','POLYXUSDT','GASUSDT','VIBUSDT',
-  'THETAUSDT','XECUSDT','HOTUSDT','CHZUSDT','ENJUSDT',
-  'CAKEUSDT','AXLUSDT','STRKUSDT','DYMUSDT','ALTUSDT',
-  'JUPUSDT','WIFUSDT','BONKUSDT','PEPEUSDT','FLOKIUSDT'
-];
-    console.log('Fallback liste kullaniliyor: ' + allSymbols.length);
-  }
+  allSymbols = [
+    'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
+    'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT',
+    'MATICUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','NEARUSDT',
+    'FTMUSDT','ALGOUSDT','VETUSDT','ICPUSDT','FILUSDT',
+    'SANDUSDT','MANAUSDT','AXSUSDT','GALAUSDT','APEUSDT',
+    'OPUSDT','ARBUSDT','INJUSDT','SUIUSDT','SEIUSDT',
+    'TIAUSDT','WLDUSDT','FETUSDT','AGIXUSDT','RENDERUSDT',
+    'LDOUSDT','STXUSDT','RUNEUSDT','AAVEUSDT','CRVUSDT',
+    'MKRUSDT','COMPUSDT','SNXUSDT','DYDXUSDT','GMXUSDT',
+    'TRXUSDT','EOSUSDT','ETCUSDT','BCHUSDT','XMRUSDT',
+    'HBARUSDT','ZILUSDT','ONTUSDT','QTUMUSDT','OCEANUSDT',
+    'ANKRUSDT','SKLUSDT','AUDIOUSDT','FLOWUSDT','ROSEUSDT',
+    'IMXUSDT','LRCUSDT','MASKUSDT','ENSUSDT','JASMYUSDT',
+    'RVNUSDT','BALUSDT','BANDUSDT','KNCUSDT','STORJUSDT',
+    'SPELLUSDT','PERPUSDT','CFXUSDT','WOOUSDT','ICXUSDT',
+    'KAVAUSDT','IOTAUSDT','CELOUSDT','ALPHAUSDT','COTIUSDT',
+    'REQUSDT','OGNUSDT','KLAYUSDT','MINAUSDT','RNDRUSDT',
+    'LOOKSUSDT','BLURUSDT','STGUSDT','MAGICUSDT','HIGHUSDT',
+    'TUSDT','GALUSDT','IDUSDT','EDUUSDT','MNTUSDT',
+    'CYBERUSDT','ARKUSDT','FRONTUSDT','POWRUSDT','COMBOUSDT',
+    'WAXPUSDT','RIFUSDT','POLYXUSDT','GASUSDT','VIBUSDT',
+    'THETAUSDT','XECUSDT','HOTUSDT','CHZUSDT','ENJUSDT',
+    'CAKEUSDT','AXLUSDT','STRKUSDT','DYMUSDT','ALTUSDT',
+    'JUPUSDT','WIFUSDT','BONKUSDT','PEPEUSDT','FLOKIUSDT',
+    'TRBUSDT','PORTALUSDT','MANTAUSDT','RONINUSDT','TAOUSDT',
+    'NOTUSDT','EIGENUSDT','MOVEUSDT','MEUSDT','VIRTUALUSDT',
+    'MOODENGUSDT','ACTUSDT','COWUSDT','PNUTUSDT','GRASSUSDT',
+    'GOATUSDT','HMSTRUSDT','DOGSUSDT','TURBOUSDT','NEIROUSDT',
+    'KAIAUSDT','WUSDT','BOMEUSDT','MEWUSDT','SATSUSDT',
+    'ACHUSDT','1000SHIBUSDT','1000PEPEUSDT','GALAUSDT','GRTUSDT',
+    'CHRUSDT','CELRUSDT','MTLUSDT','CTSIUSDT','RLCUSDT',
+    'USDCUSDT','BUSDUSDT','TUSDUSDT','FDUSDUSDT','USDTUSDT'
+  ];
+  console.log('Statik liste: ' + allSymbols.length + ' parite');
 }
+
 function subscribe(callback) {
   subscribers.push(callback);
 }
@@ -71,37 +62,35 @@ async function scanBatch(symbols, interval) {
     try {
       var candles = await binance.getHistoricalCandles(symbols[i], interval, 200);
       var analysis = indicators.analyzeCandles(candles);
-      if (Math.abs(analysis.score) >= 0) {
-        var tp1Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 2 / analysis.lastClose * 100).toFixed(2)) : 0;
-        var tp2Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 3 / analysis.lastClose * 100).toFixed(2)) : 0;
-        var tp3Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 5 / analysis.lastClose * 100).toFixed(2)) : 0;
-        var stopLossPct = analysis.atr ? parseFloat((analysis.atr.lastATR * 1.5 / analysis.lastClose * 100).toFixed(2)) : 0;
-        var riskReward = stopLossPct > 0 ? parseFloat((tp1Pct / stopLossPct).toFixed(2)) : 0;
-        var isHighPotential = tp3Pct >= 5;
+      var tp1Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 2 / analysis.lastClose * 100).toFixed(2)) : 0;
+      var tp2Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 3 / analysis.lastClose * 100).toFixed(2)) : 0;
+      var tp3Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 5 / analysis.lastClose * 100).toFixed(2)) : 0;
+      var stopLossPct = analysis.atr ? parseFloat((analysis.atr.lastATR * 1.5 / analysis.lastClose * 100).toFixed(2)) : 0;
+      var riskReward = stopLossPct > 0 ? parseFloat((tp1Pct / stopLossPct).toFixed(2)) : 0;
+      var isHighPotential = tp3Pct >= 5;
 
-        if (analysis.atr) {
-          analysis.atr.tp1Pct = tp1Pct;
-          analysis.atr.tp2Pct = tp2Pct;
-          analysis.atr.tp3Pct = tp3Pct;
-          analysis.atr.stopLossPct = stopLossPct;
-          analysis.atr.riskReward = riskReward;
-        }
-
-        results.push({
-          symbol:          symbols[i],
-          lastClose:       analysis.lastClose,
-          score:           analysis.score,
-          overallSignal:   analysis.overallSignal,
-          signals:         analysis.signals,
-          atr:             analysis.atr,
-          sr:              analysis.supportResistance,
-          rsi:             analysis.rsi,
-          trend:           analysis.trend,
-          stochRSI:        analysis.stochRSI,
-          isHighPotential: isHighPotential,
-          scannedAt:       new Date().toISOString()
-        });
+      if (analysis.atr) {
+        analysis.atr.tp1Pct = tp1Pct;
+        analysis.atr.tp2Pct = tp2Pct;
+        analysis.atr.tp3Pct = tp3Pct;
+        analysis.atr.stopLossPct = stopLossPct;
+        analysis.atr.riskReward = riskReward;
       }
+
+      results.push({
+        symbol:          symbols[i],
+        lastClose:       analysis.lastClose,
+        score:           analysis.score,
+        overallSignal:   analysis.overallSignal,
+        signals:         analysis.signals,
+        atr:             analysis.atr,
+        sr:              analysis.supportResistance,
+        rsi:             analysis.rsi,
+        trend:           analysis.trend,
+        stochRSI:        analysis.stochRSI,
+        isHighPotential: isHighPotential,
+        scannedAt:       new Date().toISOString()
+      });
     } catch (err) {
       // sessizce gec
     }
