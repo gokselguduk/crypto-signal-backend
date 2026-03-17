@@ -11,7 +11,7 @@ async function fetchAllSymbols() {
   try {
     var res = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
       headers: { 'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY },
-      params: { limit: 150, convert: 'USDT' }
+      params: { limit: 100, convert: 'USDT' }
     });
     var coins = res.data.data;
     var binanceSymbols = coins
@@ -71,7 +71,7 @@ async function scanBatch(symbols, interval) {
     try {
       var candles = await binance.getHistoricalCandles(symbols[i], interval, 200);
       var analysis = indicators.analyzeCandles(candles);
-      if (Math.abs(analysis.score) >= 1) {
+      if (Math.abs(analysis.score) >= 0) {
         var tp1Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 2 / analysis.lastClose * 100).toFixed(2)) : 0;
         var tp2Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 3 / analysis.lastClose * 100).toFixed(2)) : 0;
         var tp3Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 5 / analysis.lastClose * 100).toFixed(2)) : 0;
