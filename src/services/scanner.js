@@ -92,8 +92,8 @@ async function scanBatch(symbols, interval) {
         scannedAt:       new Date().toISOString()
       });
     } catch (err) {
-      // sessizce gec
-    }
+  console.log('HATA ' + symbols[i] + ': ' + err.message);
+}
     await new Promise(function(r) { setTimeout(r, 150); });
   }
   return results;

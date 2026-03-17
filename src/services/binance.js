@@ -10,12 +10,11 @@ class BinanceService {
   }
 
   subscribeToCandles(symbol, interval, callback) {
-    const key = `${symbol.toLowerCase()}@kline_${interval}`;
+    const key = symbol.toLowerCase() + '@kline_' + interval;
     if (!this.subscribers.has(key)) {
       this.subscribers.set(key, []);
     }
     this.subscribers.get(key).push(callback);
-
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       this.connect();
     } else {
@@ -24,15 +23,13 @@ class BinanceService {
   }
 
   connect() {
-    this.ws = new WebSocket(`${process.env.BINANCE_WS_URL}/stream`);
-
+    this.ws = new WebSocket(process.env.BINANCE_WS_URL + '/stream');
     this.ws.on('open', () => {
-      console.log('Binance WebSocket bağlandı');
+      console.log('Binance WebSocket baglandi');
       for (const key of this.subscribers.keys()) {
         this.sendSubscription(key);
       }
     });
-
     this.ws.on('message', (data) => {
       const msg = JSON.parse(data);
       if (msg.stream && msg.data) {
@@ -50,14 +47,12 @@ class BinanceService {
         callbacks.forEach(cb => cb(candle));
       }
     });
-
     this.ws.on('close', () => {
-      console.log('Bağlantı kesildi, 3 saniye sonra yeniden bağlanıyor...');
+      console.log('Baglanti kesildi, yeniden baglanıyor...');
       setTimeout(() => this.connect(), 3000);
     });
-
     this.ws.on('error', (err) => {
-      console.error('WebSocket hatası:', err.message);
+      console.error('WebSocket hatasi:', err.message);
     });
   }
 
@@ -71,21 +66,23 @@ class BinanceService {
     }
   }
 
-  async getHistoricalCandles(symbol, interval, limit = 1000) {
-    const url = `${process.env.BINANCE_REST_URL}/api/v3/klines`;
-    console.log('İstek atılıyor:', url);
-    const response = await axios.get(url, {
-      params: { symbol: symbol.toUpperCase(), interval, limit }
+  async getHistoricalCandles(symbol, interval, limit) {
+    if (!limit) limit = 200;
+    var url = 'https://fapi.binance.com/fapi/v1/klines';
+    var response = await axios.get(url, {
+      params: { symbol: symbol.toUpperCase(), interval: interval, limit: limit }
     });
-    return response.data.map(k => ({
-      time:   k[0],
-      open:   parseFloat(k[1]),
-      high:   parseFloat(k[2]),
-      low:    parseFloat(k[3]),
-      close:  parseFloat(k[4]),
-      volume: parseFloat(k[5]),
-      closed: true
-    }));
+    return response.data.map(function(k) {
+      return {
+        time:   k[0],
+        open:   parseFloat(k[1]),
+        high:   parseFloat(k[2]),
+        low:    parseFloat(k[3]),
+        close:  parseFloat(k[4]),
+        volume: parseFloat(k[5]),
+        closed: true
+      };
+    });
   }
 }
 
