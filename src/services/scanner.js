@@ -11,7 +11,7 @@ async function fetchAllSymbols() {
   try {
     var res = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
       headers: { 'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY },
-      params: { limit: 100, convert: 'USDT' }
+      params: { limit: 50, convert: 'USDT' }
     });
     var coins = res.data.data;
     var binanceSymbols = coins
