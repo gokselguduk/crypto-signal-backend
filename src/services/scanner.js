@@ -8,21 +8,17 @@ var isScanning = false;
 var allSymbols = [];
 
 async function fetchAllSymbols() {
-  try {
-    var res = await axios.get('https://api.binance.com/api/v3/exchangeInfo');
-    allSymbols = res.data.symbols
-      .filter(function(s) {
-        return s.status === 'TRADING' && s.quoteAsset === 'USDT';
-      })
-      .map(function(s) { return s.symbol; });
-    console.log('Toplam parite: ' + allSymbols.length);
-  } catch (err) {
-    console.error('Sembol listesi alinamadi:', err.message);
-    allSymbols = [
-      'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
-      'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT'
-    ];
-  }
+  allSymbols = [
+    'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
+    'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT',
+    'MATICUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','NEARUSDT',
+    'FTMUSDT','ALGOUSDT','VETUSDT','ICPUSDT','FILUSDT',
+    'SANDUSDT','MANAUSDT','AXSUSDT','GALAUSDT','APEUSDT',
+    'OPUSDT','ARBUSDT','INJUSDT','SUIUSDT','SEIUSDT',
+    'TIAUSDT','WLDUSDT','FETUSDT','AGIXUSDT','RENDERUSDT',
+    'JASMYUSDT','WOOUSDT','RVNUSDT','ZILUSDT','HBARUSDT'
+  ];
+  console.log('Toplam parite: ' + allSymbols.length);
 }
 
 function subscribe(callback) {
