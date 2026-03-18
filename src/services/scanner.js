@@ -58,47 +58,85 @@ function getLastSignals() {
 
 async function scanBatch(symbols, interval) {
   var results = [];
+  var sentiment = await sentimentModule.getFearGreed();
+
   for (var i = 0; i < symbols.length; i++) {
     try {
-      var candles = await binance.getHistoricalCandles(symbols[i], interval, 200);
-      var analysis = indicators.analyzeCandles(candles);
-      var tp1Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 2 / analysis.lastClose * 100).toFixed(2)) : 0;
-      var tp2Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 3 / analysis.lastClose * 100).toFixed(2)) : 0;
-      var tp3Pct = analysis.atr ? parseFloat((analysis.atr.lastATR * 5 / analysis.lastClose * 100).toFixed(2)) : 0;
-      var stopLossPct = analysis.atr ? parseFloat((analysis.atr.lastATR * 1.5 / analysis.lastClose * 100).toFixed(2)) : 0;
-      var riskReward = stopLossPct > 0 ? parseFloat((tp1Pct / stopLossPct).toFixed(2)) : 0;
+      var candles1h   = await binance.getHistoricalCandles(symbols[i], '1h',  200);
+      var candles4h   = await binance.getHistoricalCandles(symbols[i], '4h',  100);
+      var analysis1h  = indicators.analyzeCandles(candles1h);
+      var analysis4h  = indicators.analyzeCandles(candles4h);
+      var funding     = await fundingModule.getFundingRate(symbols[i]);
+      var orderBook   = await orderBookModule.analyzeOrderBook(symbols[i]);
+      var whale       = await whaleModule.getWhaleActivity(symbols[i]);
+var sentimentModule = require('../indicators/sentiment');
+      var mtfScore = 0;
+      if (analysis1h.score > 0 && analysis4h.score > 0) mtfScore = 2;
+      if (analysis1h.score > 0 && analysis4h.score <= 0) mtfScore = -1;
+      if (analysis1h.score > 0 && analysis4h.trend && analysis4h.trend.strength >= 2) mtfScore += 1;
+
+      var extraScore = 0;
+      if (funding.isVeryNegative) extraScore += 2;
+      if (funding.isNegative)     extraScore += 1;
+      if (funding.isVeryPositive) extraScore -= 2;
+      if (orderBook.bullish)      extraScore += 2;
+      if (orderBook.buyWall)      extraScore += 1;
+      if (orderBook.bearish)      extraScore -= 2;
+      if (orderBook.sellWall)     extraScore -= 1;
+      if (whale.whaleBullish)     extraScore += 2;
+      if (whale.whaleBearish)     extraScore -= 2;
+      if (sentiment.isExtremeFear && analysis1h.score > 0) extraScore += 2;
+      if (sentiment.isFear        && analysis1h.score > 0) extraScore += 1;
+      if (sentiment.isExtremeGreed) extraScore -= 1;
+
+      var finalScore = analysis1h.score + mtfScore + extraScore;
+
+      var tp1Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 2   / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var tp2Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 3   / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var tp3Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 5   / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var stopLossPct = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 1.5 / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var riskReward  = stopLossPct > 0 ? parseFloat((tp1Pct / stopLossPct).toFixed(2)) : 0;
       var isHighPotential = tp3Pct >= 5;
 
-      if (analysis.atr) {
-        analysis.atr.tp1Pct = tp1Pct;
-        analysis.atr.tp2Pct = tp2Pct;
-        analysis.atr.tp3Pct = tp3Pct;
-        analysis.atr.stopLossPct = stopLossPct;
-        analysis.atr.riskReward = riskReward;
+      if (analysis1h.atr) {
+        analysis1h.atr.tp1Pct      = tp1Pct;
+        analysis1h.atr.tp2Pct      = tp2Pct;
+        analysis1h.atr.tp3Pct      = tp3Pct;
+        analysis1h.atr.stopLossPct = stopLossPct;
+        analysis1h.atr.riskReward  = riskReward;
       }
 
       results.push({
         symbol:          symbols[i],
-        lastClose:       analysis.lastClose,
-        score:           analysis.score,
-        overallSignal:   analysis.overallSignal,
-        signals:         analysis.signals,
-        atr:             analysis.atr,
-        sr:              analysis.supportResistance,
-        rsi:             analysis.rsi,
-        trend:           analysis.trend,
-        stochRSI:        analysis.stochRSI,
+        lastClose:       analysis1h.lastClose,
+        score:           finalScore,
+        score1h:         analysis1h.score,
+        score4h:         analysis4h.score,
+        mtfKonfirm:      mtfScore >= 2,
+        overallSignal:   analysis1h.overallSignal,
+        signalStrength:  analysis1h.signalStrength,
+        signals:         analysis1h.signals,
+        atr:             analysis1h.atr,
+        sr:              analysis1h.supportResistance,
+        fibonacci:       analysis1h.fibonacci,
+        volume:          analysis1h.volume,
+        funding:         funding,
+        orderBook:       orderBook,
+        whale:           whale,
+        sentiment:       sentiment,
+        rsi:             analysis1h.rsi,
+        trend:           analysis1h.trend,
+        stochRSI:        analysis1h.stochRSI,
         isHighPotential: isHighPotential,
         scannedAt:       new Date().toISOString()
       });
     } catch (err) {
-  console.log('HATA ' + symbols[i] + ': ' + err.message);
-}
-    await new Promise(function(r) { setTimeout(r, 150); });
+      console.log('HATA ' + symbols[i] + ': ' + err.message);
+    }
+    await new Promise(function(r) { setTimeout(r, 300); });
   }
   return results;
 }
-
 async function scanMarket(interval) {
   if (!interval) interval = '1h';
   if (isScanning) {
