@@ -100,10 +100,7 @@ async function scanBatch(symbols, interval) {
       if (analysis1h.volume    && analysis1h.volume.isHigh)       konfirmSayisi++;
       if (sentiment.isExtremeFear || sentiment.isFear)            konfirmSayisi++;
 
-      if (netScore < 2)           continue;
-if (konfirmSayisi < 1)      continue;
-if (analysis1h.rsi > 78)    continue;                                             continue;
-      if (analysis1h.volume && analysis1h.volume.ratio < 0.5)              continue;
+      if (netScore < 1)           continue;
 
       var finalScore      = netScore;
       var tp1Pct          = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 2   / analysis1h.lastClose * 100).toFixed(2)) : 0;
