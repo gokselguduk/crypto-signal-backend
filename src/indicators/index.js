@@ -11,6 +11,17 @@ var volModule  = require('./volume');
 var fibModule  = require('./fibonacci');
 
 function analyzeCandles(candles) {
+  if (!candles || candles.length < 50) {
+    return {
+      lastClose: 0, rsi: 50, macd: {}, bollinger: {},
+      trend: { strength: 0, goldenCross: false, deathCross: false },
+      stochRSI: { k: 50, d: 50 }, atr: null,
+      supportResistance: {}, fibonacci: {}, volume: { isHigh: false, isLow: true, ratio: 0 },
+      signals: [], score: 0, overallSignal: 'NEUTRAL', signalStrength: 'NOTR'
+    };
+  }
+
+  var closes = candles.map(function(c) { return c.close; });
   var closes  = candles.map(function(c) { return c.close; });
   var rsi     = rsiModule.calculateRSI(closes, 14);
   var macd    = macdModule.calculateMACD(closes);

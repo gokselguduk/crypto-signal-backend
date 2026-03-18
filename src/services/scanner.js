@@ -24,9 +24,9 @@ async function fetchAllSymbols() {
 
     allSymbols = tumSymboller
       .filter(function(s) { return (hacimMap[s] || 0) > 3000000; })
-      .sort(function(a, b) { return (hacimMap[b] || 0) - (hacimMap[a] || 0) });
+      .sort(function(a, b) { return (hacimMap[b] || 0) - (hacimMap[a] || 0); });
 
-    console.log('Hacim filtreli parite: ' + allSymbols.length + ' (min 5M USDT/gun)');
+    console.log('Hacim filtreli parite: ' + allSymbols.length + ' (min 3M USDT/gun)');
   } catch (err) {
     console.error('Sembol listesi alinamadi:', err.message);
     allSymbols = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT'];
@@ -53,60 +53,64 @@ async function scanBatch(symbols, interval) {
     try {
       var candles1h  = await binance.getHistoricalCandles(symbols[i], '1h', 200);
       var candles4h  = await binance.getHistoricalCandles(symbols[i], '4h', 100);
-      var analysis1h = indicators.analyzeCandles(candles1h);
-      var analysis4h = indicators.analyzeCandles(candles4h);
-      var funding    = await fundingModule.getFundingRate(symbols[i]);
-      var orderBook  = await orderBookModule.analyzeOrderBook(symbols[i]);
-      var whale      = await whaleModule.getWhaleActivity(symbols[i]);
 
-      // --- MTF skoru ---
+      if (!candles1h || candles1h.length < 50) continue;
+      if (!candles4h || candles4h.length < 20) continue;
+
+      var analysis1h = null;
+      var analysis4h = null;
+
+      try { analysis1h = indicators.analyzeCandles(candles1h); } catch(e) { console.log('1h analiz hatasi ' + symbols[i] + ': ' + e.message); continue; }
+      try { analysis4h = indicators.analyzeCandles(candles4h); } catch(e) { console.log('4h analiz hatasi ' + symbols[i] + ': ' + e.message); continue; }
+
+      if (!analysis1h || analysis1h.score === undefined) continue;
+      if (!analysis4h || analysis4h.score === undefined) continue;
+
+      var funding   = await fundingModule.getFundingRate(symbols[i]);
+      var orderBook = await orderBookModule.analyzeOrderBook(symbols[i]);
+      var whale     = await whaleModule.getWhaleActivity(symbols[i]);
+
       var mtfScore = 0;
-      if (analysis1h.score > 0 && analysis4h.score > 0)                          mtfScore = 2;
-      if (analysis1h.score > 0 && analysis4h.score <= 0)                         mtfScore = -1;
+      if (analysis1h.score > 0 && analysis4h.score > 0)                               mtfScore = 2;
+      if (analysis1h.score > 0 && analysis4h.score <= 0)                              mtfScore = -1;
       if (analysis1h.score > 0 && analysis4h.trend && analysis4h.trend.strength >= 2) mtfScore += 1;
 
-      // --- Ekstra skor ---
       var extraScore = 0;
-      if (funding.isVeryNegative)                           extraScore += 2;
-      if (funding.isNegative)                               extraScore += 1;
-      if (funding.isVeryPositive)                           extraScore -= 2;
-      if (orderBook.bullish)                                extraScore += 2;
-      if (orderBook.buyWall)                                extraScore += 1;
-      if (orderBook.bearish)                                extraScore -= 2;
-      if (orderBook.sellWall)                               extraScore -= 1;
-      if (whale.whaleBullish)                               extraScore += 2;
-      if (whale.whaleBearish)                               extraScore -= 2;
-      if (sentiment.isExtremeFear && analysis1h.score > 0)  extraScore += 2;
-      if (sentiment.isFear        && analysis1h.score > 0)  extraScore += 1;
-      if (sentiment.isExtremeGreed)                         extraScore -= 1;
+      if (funding.isVeryNegative)                          extraScore += 2;
+      if (funding.isNegative)                              extraScore += 1;
+      if (funding.isVeryPositive)                          extraScore -= 2;
+      if (orderBook.bullish)                               extraScore += 2;
+      if (orderBook.buyWall)                               extraScore += 1;
+      if (orderBook.bearish)                               extraScore -= 2;
+      if (orderBook.sellWall)                              extraScore -= 1;
+      if (whale.whaleBullish)                              extraScore += 2;
+      if (whale.whaleBearish)                              extraScore -= 2;
+      if (sentiment.isExtremeFear && analysis1h.score > 0) extraScore += 2;
+      if (sentiment.isFear        && analysis1h.score > 0) extraScore += 1;
+      if (sentiment.isExtremeGreed)                        extraScore -= 1;
 
       var netScore = analysis1h.score + mtfScore + extraScore;
 
-      // --- KESKİN SİNYAL FİLTRESİ ---
-      // En az 2 bağımsız kaynak onayı şart
       var konfirmSayisi = 0;
-      if (mtfScore >= 2)                                               konfirmSayisi++;
-      if (whale.whaleBullish)                                          konfirmSayisi++;
-      if (funding.isNegative)                                          konfirmSayisi++;
-      if (orderBook.bullish)                                           konfirmSayisi++;
-      if (analysis1h.fibonacci && analysis1h.fibonacci.atSupport)      konfirmSayisi++;
-      if (analysis1h.volume    && analysis1h.volume.isHigh)            konfirmSayisi++;
-      if (sentiment.isExtremeFear || sentiment.isFear)                 konfirmSayisi++;
+      if (mtfScore >= 2)                                          konfirmSayisi++;
+      if (whale.whaleBullish)                                     konfirmSayisi++;
+      if (funding.isNegative)                                     konfirmSayisi++;
+      if (orderBook.bullish)                                      konfirmSayisi++;
+      if (analysis1h.fibonacci && analysis1h.fibonacci.atSupport) konfirmSayisi++;
+      if (analysis1h.volume    && analysis1h.volume.isHigh)       konfirmSayisi++;
+      if (sentiment.isExtremeFear || sentiment.isFear)            konfirmSayisi++;
 
-      // Skor 3 altı veya 2 konfirm altı ise atla
-      if (netScore < 3)           continue;
-      if (konfirmSayisi < 2)      continue;
-      // RSI aşırı alım bölgesinde ise atla
-      if (analysis1h.rsi > 72)    continue;
-      // Hacim çok düşükse atla
-      if (analysis1h.volume && analysis1h.volume.ratio < 0.5) continue;
+      if (netScore < 3)                                                    continue;
+      if (konfirmSayisi < 2)                                               continue;
+      if (analysis1h.rsi > 72)                                             continue;
+      if (analysis1h.volume && analysis1h.volume.ratio < 0.5)              continue;
 
-      var finalScore  = netScore;
-      var tp1Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 2   / analysis1h.lastClose * 100).toFixed(2)) : 0;
-      var tp2Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 3   / analysis1h.lastClose * 100).toFixed(2)) : 0;
-      var tp3Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 5   / analysis1h.lastClose * 100).toFixed(2)) : 0;
-      var stopLossPct = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 1.5 / analysis1h.lastClose * 100).toFixed(2)) : 0;
-      var riskReward  = stopLossPct > 0 ? parseFloat((tp1Pct / stopLossPct).toFixed(2)) : 0;
+      var finalScore      = netScore;
+      var tp1Pct          = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 2   / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var tp2Pct          = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 3   / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var tp3Pct          = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 5   / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var stopLossPct     = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 1.5 / analysis1h.lastClose * 100).toFixed(2)) : 0;
+      var riskReward      = stopLossPct > 0 ? parseFloat((tp1Pct / stopLossPct).toFixed(2)) : 0;
       var isHighPotential = tp3Pct >= 5;
 
       if (analysis1h.atr) {
