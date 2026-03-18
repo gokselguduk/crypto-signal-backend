@@ -1,8 +1,8 @@
-var binance        = require('./binance');
-var indicators     = require('../indicators');
-var fundingModule  = require('../indicators/fundingRate');
+var binance         = require('./binance');
+var indicators      = require('../indicators');
+var fundingModule   = require('../indicators/fundingRate');
 var orderBookModule = require('../indicators/orderBook');
-var whaleModule    = require('../indicators/whaleAlert');
+var whaleModule     = require('../indicators/whaleAlert');
 var sentimentModule = require('../indicators/sentiment');
 
 var lastSignals = [];
@@ -36,39 +36,62 @@ function getLastSignals() {
 }
 
 async function scanBatch(symbols, interval) {
-  var results = [];
+  var results   = [];
   var sentiment = await sentimentModule.getFearGreed();
 
   for (var i = 0; i < symbols.length; i++) {
     try {
-      var candles1h    = await binance.getHistoricalCandles(symbols[i], '1h', 200);
-      var candles4h    = await binance.getHistoricalCandles(symbols[i], '4h', 100);
-      var analysis1h   = indicators.analyzeCandles(candles1h);
-      var analysis4h   = indicators.analyzeCandles(candles4h);
-      var funding      = await fundingModule.getFundingRate(symbols[i]);
-      var orderBook    = await orderBookModule.analyzeOrderBook(symbols[i]);
-      var whale        = await whaleModule.getWhaleActivity(symbols[i]);
+      var candles1h  = await binance.getHistoricalCandles(symbols[i], '1h', 200);
+      var candles4h  = await binance.getHistoricalCandles(symbols[i], '4h', 100);
+      var analysis1h = indicators.analyzeCandles(candles1h);
+      var analysis4h = indicators.analyzeCandles(candles4h);
+      var funding    = await fundingModule.getFundingRate(symbols[i]);
+      var orderBook  = await orderBookModule.analyzeOrderBook(symbols[i]);
+      var whale      = await whaleModule.getWhaleActivity(symbols[i]);
 
+      // --- MTF skoru ---
       var mtfScore = 0;
-      if (analysis1h.score > 0 && analysis4h.score > 0) mtfScore = 2;
-      if (analysis1h.score > 0 && analysis4h.score <= 0) mtfScore = -1;
+      if (analysis1h.score > 0 && analysis4h.score > 0)                          mtfScore = 2;
+      if (analysis1h.score > 0 && analysis4h.score <= 0)                         mtfScore = -1;
       if (analysis1h.score > 0 && analysis4h.trend && analysis4h.trend.strength >= 2) mtfScore += 1;
 
+      // --- Ekstra skor ---
       var extraScore = 0;
-      if (funding.isVeryNegative)                          extraScore += 2;
-      if (funding.isNegative)                              extraScore += 1;
-      if (funding.isVeryPositive)                          extraScore -= 2;
-      if (orderBook.bullish)                               extraScore += 2;
-      if (orderBook.buyWall)                               extraScore += 1;
-      if (orderBook.bearish)                               extraScore -= 2;
-      if (orderBook.sellWall)                              extraScore -= 1;
-      if (whale.whaleBullish)                              extraScore += 2;
-      if (whale.whaleBearish)                              extraScore -= 2;
-      if (sentiment.isExtremeFear && analysis1h.score > 0) extraScore += 2;
-      if (sentiment.isFear        && analysis1h.score > 0) extraScore += 1;
-      if (sentiment.isExtremeGreed)                        extraScore -= 1;
+      if (funding.isVeryNegative)                           extraScore += 2;
+      if (funding.isNegative)                               extraScore += 1;
+      if (funding.isVeryPositive)                           extraScore -= 2;
+      if (orderBook.bullish)                                extraScore += 2;
+      if (orderBook.buyWall)                                extraScore += 1;
+      if (orderBook.bearish)                                extraScore -= 2;
+      if (orderBook.sellWall)                               extraScore -= 1;
+      if (whale.whaleBullish)                               extraScore += 2;
+      if (whale.whaleBearish)                               extraScore -= 2;
+      if (sentiment.isExtremeFear && analysis1h.score > 0)  extraScore += 2;
+      if (sentiment.isFear        && analysis1h.score > 0)  extraScore += 1;
+      if (sentiment.isExtremeGreed)                         extraScore -= 1;
 
-      var finalScore  = analysis1h.score + mtfScore + extraScore;
+      var netScore = analysis1h.score + mtfScore + extraScore;
+
+      // --- KESKİN SİNYAL FİLTRESİ ---
+      // En az 2 bağımsız kaynak onayı şart
+      var konfirmSayisi = 0;
+      if (mtfScore >= 2)                                               konfirmSayisi++;
+      if (whale.whaleBullish)                                          konfirmSayisi++;
+      if (funding.isNegative)                                          konfirmSayisi++;
+      if (orderBook.bullish)                                           konfirmSayisi++;
+      if (analysis1h.fibonacci && analysis1h.fibonacci.atSupport)      konfirmSayisi++;
+      if (analysis1h.volume    && analysis1h.volume.isHigh)            konfirmSayisi++;
+      if (sentiment.isExtremeFear || sentiment.isFear)                 konfirmSayisi++;
+
+      // Skor 3 altı veya 2 konfirm altı ise atla
+      if (netScore < 3)           continue;
+      if (konfirmSayisi < 2)      continue;
+      // RSI aşırı alım bölgesinde ise atla
+      if (analysis1h.rsi > 72)    continue;
+      // Hacim çok düşükse atla
+      if (analysis1h.volume && analysis1h.volume.ratio < 0.5) continue;
+
+      var finalScore  = netScore;
       var tp1Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 2   / analysis1h.lastClose * 100).toFixed(2)) : 0;
       var tp2Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 3   / analysis1h.lastClose * 100).toFixed(2)) : 0;
       var tp3Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 5   / analysis1h.lastClose * 100).toFixed(2)) : 0;
@@ -91,6 +114,7 @@ async function scanBatch(symbols, interval) {
         score1h:         analysis1h.score,
         score4h:         analysis4h.score,
         mtfKonfirm:      mtfScore >= 2,
+        konfirmSayisi:   konfirmSayisi,
         overallSignal:   analysis1h.overallSignal,
         signalStrength:  analysis1h.signalStrength,
         signals:         analysis1h.signals,
@@ -108,6 +132,7 @@ async function scanBatch(symbols, interval) {
         isHighPotential: isHighPotential,
         scannedAt:       new Date().toISOString()
       });
+
     } catch (err) {
       console.log('HATA ' + symbols[i] + ': ' + err.message);
     }
@@ -152,7 +177,7 @@ async function scanMarket(interval) {
 
 async function startAutoScan(interval, intervalMs) {
   if (!interval)   interval   = '1h';
-  if (!intervalMs) intervalMs = 300000;
+  if (!intervalMs) intervalMs = 1800000;
 
   await fetchAllSymbols();
   console.log('Otomatik tarama basladi — her ' + (intervalMs / 60000) + ' dakikada bir');
