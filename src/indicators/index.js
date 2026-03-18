@@ -1,14 +1,14 @@
-console.log('INDICATORS VERSION: 4.1 - KESKIN SINYAL');
+console.log('INDICATORS VERSION: 4.2 - STABLE');
 
-var rsiModule  = require('./rsi');
-var macdModule = require('./macd');
-var bollModule = require('./bollinger');
-var emaModule  = require('./ema');
+var rsiModule   = require('./rsi');
+var macdModule  = require('./macd');
+var bollModule  = require('./bollinger');
+var emaModule   = require('./ema');
 var stochModule = require('./stochRSI');
-var atrModule  = require('./atr');
-var srModule   = require('./supportResistance');
-var volModule  = require('./volume');
-var fibModule  = require('./fibonacci');
+var atrModule   = require('./atr');
+var srModule    = require('./supportResistance');
+var volModule   = require('./volume');
+var fibModule   = require('./fibonacci');
 
 function analyzeCandles(candles) {
   if (!candles || candles.length < 50) {
@@ -21,25 +21,24 @@ function analyzeCandles(candles) {
     };
   }
 
-  var closes = candles.map(function(c) { return c.close; });
-  var closes  = candles.map(function(c) { return c.close; });
-  var rsi     = rsiModule.calculateRSI(closes, 14);
-  var macd    = macdModule.calculateMACD(closes);
-  var boll    = bollModule.calculateBollinger(closes, 20);
-  var trend   = emaModule.detectTrend(closes);
-  var stoch   = stochModule.calculateStochRSI(closes);
-  var atr     = atrModule.calculateATR(candles);
-  var sr      = srModule.findSupportResistance(candles);
-  var vol     = volModule.analyzeVolume(candles);
-  var fib     = fibModule.calculateFibonacci(candles);
+  var closes   = candles.map(function(c) { return c.close; });
+  var rsi      = rsiModule.calculateRSI(closes, 14);
+  var macd     = macdModule.calculateMACD(closes);
+  var boll     = bollModule.calculateBollinger(closes, 20);
+  var trend    = emaModule.detectTrend(closes);
+  var stoch    = stochModule.calculateStochRSI(closes);
+  var atr      = atrModule.calculateATR(candles);
+  var sr       = srModule.findSupportResistance(candles);
+  var vol      = volModule.analyzeVolume(candles);
+  var fib      = fibModule.calculateFibonacci(candles);
 
-  var lastRSI  = rsi[rsi.length - 1];
-  var lastMACD = {
+  var lastRSI   = rsi[rsi.length - 1];
+  var lastMACD  = {
     macd:      macd.macd[macd.macd.length - 1],
     signal:    macd.signal[macd.signal.length - 1],
     histogram: macd.histogram[macd.histogram.length - 1]
   };
-  var lastBoll  = boll[boll.length - 1];
+  var lastBoll  = (boll && boll.length > 0) ? boll[boll.length - 1] : { upper: 0, lower: 0, middle: 0 };
   var lastClose = closes[closes.length - 1];
 
   var signals = [];
@@ -54,8 +53,8 @@ function analyzeCandles(candles) {
   if (lastMACD.histogram > 0 && macd.histogram[macd.histogram.length - 2] < 0) { signals.push({ type: 'BUY',  reason: 'MACD pozitife dondu' }); score += 1; }
   if (lastMACD.histogram < 0 && macd.histogram[macd.histogram.length - 2] > 0) { signals.push({ type: 'SELL', reason: 'MACD negatife dondu' }); score -= 1; }
 
-  if (lastClose < lastBoll.lower) { signals.push({ type: 'BUY',  reason: 'BB alt bandi' }); score += 1; }
-  if (lastClose > lastBoll.upper) { signals.push({ type: 'SELL', reason: 'BB ust bandi' }); score -= 1; }
+  if (lastBoll.lower && lastClose < lastBoll.lower) { signals.push({ type: 'BUY',  reason: 'BB alt bandi' }); score += 1; }
+  if (lastBoll.upper && lastClose > lastBoll.upper) { signals.push({ type: 'SELL', reason: 'BB ust bandi' }); score -= 1; }
 
   if (trend.goldenCross) { signals.push({ type: 'BUY',  reason: 'Golden Cross' }); score += 3; }
   if (trend.deathCross)  { signals.push({ type: 'SELL', reason: 'Death Cross'  }); score -= 3; }
@@ -72,28 +71,15 @@ function analyzeCandles(candles) {
   if (vol.isHigh && score < 0) { signals.push({ type: 'SELL', reason: 'Yuksek hacim: ' + vol.ratio + 'x' }); score -= 1; }
   if (vol.isLow  && Math.abs(score) > 0) { score = Math.round(score * 0.7); }
 
-  // Çelişkili sinyal kontrolü — buy ve sell eşitse nötr say
   var buyCount  = signals.filter(function(s) { return s.type === 'BUY';  }).length;
   var sellCount = signals.filter(function(s) { return s.type === 'SELL'; }).length;
   if (buyCount > 0 && sellCount >= buyCount) {
-    score          = 0;
-    var overallSignal  = 'NEUTRAL';
-    var signalStrength = 'NOTR';
     return {
-      lastClose:         lastClose,
-      rsi:               parseFloat(lastRSI.toFixed(2)),
-      macd:              lastMACD,
-      bollinger:         lastBoll,
-      trend:             trend,
-      stochRSI:          { k: stoch.lastK, d: stoch.lastD },
-      atr:               atr,
-      supportResistance: sr,
-      fibonacci:         fib,
-      volume:            vol,
-      signals:           signals,
-      score:             0,
-      overallSignal:     'NEUTRAL',
-      signalStrength:    'NOTR'
+      lastClose: lastClose, rsi: parseFloat(lastRSI.toFixed(2)),
+      macd: lastMACD, bollinger: lastBoll, trend: trend,
+      stochRSI: { k: stoch.lastK, d: stoch.lastD }, atr: atr,
+      supportResistance: sr, fibonacci: fib, volume: vol,
+      signals: signals, score: 0, overallSignal: 'NEUTRAL', signalStrength: 'NOTR'
     };
   }
 
