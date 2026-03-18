@@ -46,6 +46,6 @@ io.on('connection', function(socket) {
   socket.on('disconnect', function() {});
 });
 scanner.subscribe(function(data) { io.emit('scan_update', data); });
-scanner.startAutoScan('1h', 90000);
+scanner.startAutoScan('1h', 1800000);
 var PORT = process.env.PORT || 3000;
 server.listen(PORT, function() { console.log('Sunucu calisiyor: http://localhost:' + PORT); });

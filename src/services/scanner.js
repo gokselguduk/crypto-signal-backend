@@ -11,41 +11,16 @@ var isScanning  = false;
 var allSymbols  = [];
 
 async function fetchAllSymbols() {
-  allSymbols = [
-    'BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT',
-    'ADAUSDT','DOGEUSDT','AVAXUSDT','LINKUSDT','DOTUSDT',
-    'MATICUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','NEARUSDT',
-    'FTMUSDT','ALGOUSDT','VETUSDT','ICPUSDT','FILUSDT',
-    'SANDUSDT','MANAUSDT','AXSUSDT','GALAUSDT','APEUSDT',
-    'OPUSDT','ARBUSDT','INJUSDT','SUIUSDT','SEIUSDT',
-    'TIAUSDT','WLDUSDT','FETUSDT','AGIXUSDT','RENDERUSDT',
-    'LDOUSDT','STXUSDT','RUNEUSDT','AAVEUSDT','CRVUSDT',
-    'MKRUSDT','COMPUSDT','SNXUSDT','DYDXUSDT','GMXUSDT',
-    'TRXUSDT','EOSUSDT','ETCUSDT','BCHUSDT','XMRUSDT',
-    'HBARUSDT','ZILUSDT','ONTUSDT','QTUMUSDT','OCEANUSDT',
-    'ANKRUSDT','SKLUSDT','AUDIOUSDT','FLOWUSDT','ROSEUSDT',
-    'IMXUSDT','LRCUSDT','MASKUSDT','ENSUSDT','JASMYUSDT',
-    'RVNUSDT','BALUSDT','BANDUSDT','KNCUSDT','STORJUSDT',
-    'SPELLUSDT','PERPUSDT','CFXUSDT','WOOUSDT','ICXUSDT',
-    'KAVAUSDT','IOTAUSDT','CELOUSDT','ALPHAUSDT','COTIUSDT',
-    'REQUSDT','OGNUSDT','KLAYUSDT','MINAUSDT','RNDRUSDT',
-    'LOOKSUSDT','BLURUSDT','STGUSDT','MAGICUSDT','HIGHUSDT',
-    'TUSDT','GALUSDT','IDUSDT','EDUUSDT','MNTUSDT',
-    'CYBERUSDT','ARKUSDT','FRONTUSDT','POWRUSDT','COMBOUSDT',
-    'WAXPUSDT','RIFUSDT','POLYXUSDT','GASUSDT','VIBUSDT',
-    'THETAUSDT','XECUSDT','HOTUSDT','CHZUSDT','ENJUSDT',
-    'CAKEUSDT','AXLUSDT','STRKUSDT','DYMUSDT','ALTUSDT',
-    'JUPUSDT','WIFUSDT','BONKUSDT','PEPEUSDT','FLOKIUSDT',
-    'TRBUSDT','PORTALUSDT','MANTAUSDT','RONINUSDT','TAOUSDT',
-    'NOTUSDT','EIGENUSDT','MOVEUSDT','MEUSDT','VIRTUALUSDT',
-    'MOODENGUSDT','ACTUSDT','COWUSDT','PNUTUSDT','GRASSUSDT',
-    'GOATUSDT','HMSTRUSDT','DOGSUSDT','TURBOUSDT','NEIROUSDT',
-    'KAIAUSDT','WUSDT','BOMEUSDT','MEWUSDT','SATSUSDT',
-    'ACHUSDT','1000SHIBUSDT','1000PEPEUSDT','GALAUSDT','GRTUSDT',
-    'CHRUSDT','CELRUSDT','MTLUSDT','CTSIUSDT','RLCUSDT',
-    'USDCUSDT','BUSDUSDT','TUSDUSDT','FDUSDUSDT','USDTUSDT'
-  ];
-  console.log('Statik liste: ' + allSymbols.length + ' parite');
+  try {
+    var res = await require('axios').get('https://fapi.binance.com/fapi/v1/exchangeInfo');
+    allSymbols = res.data.symbols
+      .filter(function(s) { return s.status === 'TRADING' && s.quoteAsset === 'USDT'; })
+      .map(function(s) { return s.baseAsset + 'USDT'; });
+    console.log('Binance Futures USDT pariteleri: ' + allSymbols.length);
+  } catch (err) {
+    console.error('Sembol listesi alinamadi:', err.message);
+    allSymbols = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT'];
+  }
 }
 
 function subscribe(callback) {
@@ -152,7 +127,7 @@ async function scanMarket(interval) {
   console.log('Tarama basladi — ' + allSymbols.length + ' parite');
 
   var results   = [];
-  var batchSize = 20;
+  var batchSize = 10;
 
   for (var i = 0; i < allSymbols.length; i += batchSize) {
     var batch        = allSymbols.slice(i, i + batchSize);
