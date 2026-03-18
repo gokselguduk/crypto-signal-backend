@@ -30,6 +30,23 @@ app.get('/api/backtest/:symbol/:interval', function(req, res) {
     res.json(Object.assign({ symbol: req.params.symbol, interval: req.params.interval }, backtest.runBacktest(c, { stopLossPercent: parseFloat(req.query.stopLoss||2), takeProfitPercent: parseFloat(req.query.takeProfit||4), initialCapital: parseFloat(req.query.capital||1000) })));
   }).catch(function(e) { res.status(500).json({ error: e.message }); });
 });
+var memeRadar = require('./indicators/memeRadar');
+var lastMemeData = null;
+
+app.get('/api/meme/radar', function(req, res) {
+  if (lastMemeData) return res.json(lastMemeData);
+  memeRadar.scanMemeRadar().then(function(data) {
+    lastMemeData = data;
+    res.json(data);
+  }).catch(function(e) { res.status(500).json({ error: e.message }); });
+});
+
+app.get('/api/meme/scan', function(req, res) {
+  memeRadar.scanMemeRadar().then(function(data) {
+    lastMemeData = data;
+    res.json(data);
+  }).catch(function(e) { res.status(500).json({ error: e.message }); });
+});
 app.get('/api/scan/latest', function(req, res) { res.json({ signals: scanner.getLastSignals() }); });
 app.get('/api/scan/:interval', function(req, res) {
   scanner.scanMarket(req.params.interval).then(function(r) {
