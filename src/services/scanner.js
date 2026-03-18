@@ -152,7 +152,7 @@ async function scanMarket(interval) {
   console.log('Tarama basladi — ' + allSymbols.length + ' parite');
 
   var results   = [];
-  var batchSize = 10;
+  var batchSize = 2;
 
   for (var i = 0; i < allSymbols.length; i += batchSize) {
     var batch        = allSymbols.slice(i, i + batchSize);
