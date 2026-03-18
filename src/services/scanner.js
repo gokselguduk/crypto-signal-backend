@@ -23,7 +23,7 @@ async function fetchAllSymbols() {
     ticker.data.forEach(function(t) { hacimMap[t.symbol] = parseFloat(t.quoteVolume); });
 
     allSymbols = tumSymboller
-      .filter(function(s) { return (hacimMap[s] || 0) > 3000000; })
+      .filter(function(s) { return (hacimMap[s] || 0) > 5000000; })
       .sort(function(a, b) { return (hacimMap[b] || 0) - (hacimMap[a] || 0); });
 
     console.log('Hacim filtreli parite: ' + allSymbols.length + ' (min 3M USDT/gun)');
@@ -163,7 +163,7 @@ async function scanMarket(interval) {
   console.log('Tarama basladi — ' + allSymbols.length + ' parite');
 
   var results   = [];
-  var batchSize = 3;
+  var batchSize = 1;
 
   for (var i = 0; i < allSymbols.length; i += batchSize) {
     var batch        = allSymbols.slice(i, i + batchSize);
