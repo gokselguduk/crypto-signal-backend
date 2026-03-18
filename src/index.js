@@ -13,6 +13,7 @@ var server = http.createServer(app);
 var io = new socketio.Server(server, { cors: { origin: '*' } });
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', function(req, res) { res.json({ status: 'ok' }); });
 app.get('/api/candles/:symbol/:interval', function(req, res) {
   binance.getHistoricalCandles(req.params.symbol, req.params.interval, 200).then(function(c) {
