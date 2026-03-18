@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Sunday">
-<title>Sunday</title>
+<meta name="apple-mobile-web-app-title" content="Sunny">
+<title>Sunny</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:#0A0E17;color:#fff;font-family:-apple-system,sans-serif;overflow-x:hidden;padding-bottom:20px}
@@ -155,12 +155,14 @@ body{background:#0A0E17;color:#fff;font-family:-apple-system,sans-serif;overflow
 .r-ind-sayi{font-size:20px;font-weight:700}
 .r-ind-etiket{font-size:10px;color:#8B949E;margin-top:4px}
 </style>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
 </head>
 <body>
 
 <div class="sticky-top">
   <div class="piyasa-durum" id="piyasa-durum">
-    <div class="app-adi" id="app-adi" style="color:#58A6FF">SUNDAY</div>
+    <div class="app-adi" id="app-adi" style="color:#58A6FF">SUNNY</div>
     <svg width="52" height="52" viewBox="0 0 64 64" id="sun-svg"></svg>
     <div class="piyasa-etiket" id="piyasa-etiket" style="color:#58A6FF">Analiz ediliyor...</div>
     <div class="piyasa-alt" id="piyasa-alt">Piyasa durumu hesaplanıyor</div>
@@ -349,6 +351,8 @@ function sunGuncelle(sins, sentiment) {
   document.getElementById('piyasa-etiket').style.color=r.c;
   document.getElementById('piyasa-alt').textContent=r.alt;
   document.getElementById('piyasa-durum').style.background=r.bg;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', r.c);
 }
 
 // ===================== HESAPLAMA FONKSİYONLARI =====================
