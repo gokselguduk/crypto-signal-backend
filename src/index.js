@@ -19,7 +19,13 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 var lastMemeData = null;
+var silverAnalysis = require('./services/silverAnalysis');
 
+app.get('/api/silver', function(req, res) {
+  silverAnalysis.analyzeSilver()
+    .then(function(data) { res.json(data); })
+    .catch(function(e) { res.status(500).json({ error: e.message }); });
+});
 app.get('/health', function(req, res) {
   res.json({ status: 'ok' });
 });
