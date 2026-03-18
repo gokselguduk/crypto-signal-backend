@@ -12,11 +12,21 @@ var allSymbols  = [];
 
 async function fetchAllSymbols() {
   try {
-    var res = await require('axios').get('https://fapi.binance.com/fapi/v1/exchangeInfo');
-    allSymbols = res.data.symbols
+    var axios = require('axios');
+    var res = await axios.get('https://fapi.binance.com/fapi/v1/exchangeInfo');
+    var tumSymboller = res.data.symbols
       .filter(function(s) { return s.status === 'TRADING' && s.quoteAsset === 'USDT'; })
       .map(function(s) { return s.baseAsset + 'USDT'; });
-    console.log('Binance Futures USDT pariteleri: ' + allSymbols.length);
+
+    var ticker = await axios.get('https://fapi.binance.com/fapi/v1/ticker/24hr');
+    var hacimMap = {};
+    ticker.data.forEach(function(t) { hacimMap[t.symbol] = parseFloat(t.quoteVolume); });
+
+    allSymbols = tumSymboller
+      .filter(function(s) { return (hacimMap[s] || 0) > 3000000; })
+      .sort(function(a, b) { return (hacimMap[b] || 0) - (hacimMap[a] || 0) });
+
+    console.log('Hacim filtreli parite: ' + allSymbols.length + ' (min 5M USDT/gun)');
   } catch (err) {
     console.error('Sembol listesi alinamadi:', err.message);
     allSymbols = ['BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT'];
@@ -136,7 +146,7 @@ async function scanBatch(symbols, interval) {
     } catch (err) {
       console.log('HATA ' + symbols[i] + ': ' + err.message);
     }
-    await new Promise(function(r) { setTimeout(r, 300); });
+    await new Promise(function(r) { setTimeout(r, 500); });
   }
   return results;
 }
@@ -152,7 +162,7 @@ async function scanMarket(interval) {
   console.log('Tarama basladi — ' + allSymbols.length + ' parite');
 
   var results   = [];
-  var batchSize = 2;
+  var batchSize = 5;
 
   for (var i = 0; i < allSymbols.length; i += batchSize) {
     var batch        = allSymbols.slice(i, i + batchSize);
