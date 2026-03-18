@@ -390,8 +390,7 @@ function maxKazanc(s) { return s.atr&&s.atr.tp3Pct?s.atr.tp3Pct:(s.atr&&s.atr.tp
 function sure(s) { const t=s.atr&&s.atr.tp1Pct?s.atr.tp1Pct:2; if(t>=5) return '2-4s'; if(t>=3) return '4-8s'; if(t>=2) return '8-24s'; return '1-3g'; }
 function renk(skor) { if(skor>=8) return '#00FF88'; if(skor>=6) return '#39d353'; if(skor>=4) return '#3FB950'; return '#2ea84c'; }
 function etiket(skor) { if(skor>=8) return 'MÜKEMMEL AL'; if(skor>=6) return 'ÇOK GÜÇLÜ AL'; if(skor>=4) return 'GÜÇLÜ AL'; if(skor>=2) return 'AL'; return 'ZAYIF AL'; }
-function fmt(n) { if(!n&&n!==0) return '-'; return Number(n).toLocaleString('tr-TR',{maximumFractionDigits:6}); }
-
+function fmt(n) { if(!n&&n!==0) return '-'; return Number(n).toLocaleString('tr-TR',{minimumFractionDigits:5,maximumFractionDigits:5}); }
 function sirala(liste) {
   const l=[...liste];
   if(aktifSiralama==='guven')  return l.sort((a,b)=>guvenPct(b)-guvenPct(a));
