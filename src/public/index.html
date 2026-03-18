@@ -161,12 +161,27 @@ body { background:#0A0E17; color:#fff; font-family:-apple-system,sans-serif; ove
 .gv-detay-deger { font-size:12px; font-weight:700; }
 .filtre-bar-yeni { display:flex; gap:6px; padding:8px 16px; overflow-x:auto; scrollbar-width:none; background:#0A0E17; border-bottom:1px solid #21262D; }
 .filtre-bar-yeni::-webkit-scrollbar { display:none; }
+.piyasa-durum { display:flex; flex-direction:column; align-items:center; padding:16px 16px 8px; }
+.sun-wrap { position:relative; width:64px; height:64px; margin-bottom:8px; }
+.sun-core { width:40px; height:40px; border-radius:50%; position:absolute; top:12px; left:12px; }
+.sun-ray { position:absolute; width:4px; border-radius:2px; transform-origin:bottom center; }
+.piyasa-etiket { font-size:13px; font-weight:700; letter-spacing:1px; }
+.piyasa-alt { font-size:11px; color:#8B949E; margin-top:2px; }
+.app-adi { font-size:26px; font-weight:700; letter-spacing:2px; }
 </style>
 </head>
 <body>
 
 <div style="position:sticky;top:0;background:#0A0E17;z-index:100;border-bottom:1px solid #21262D">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px">
+  <div class="piyasa-durum">
+  <div class="app-adi" id="app-adi">SUNDAY</div>
+  <div class="sun-wrap" id="sun-wrap">
+    <svg width="64" height="64" viewBox="0 0 64 64" id="sun-svg"></svg>
+  </div>
+  <div class="piyasa-etiket" id="piyasa-etiket">Analiz ediliyor...</div>
+  <div class="piyasa-alt" id="piyasa-alt">Piyasa durumu hesaplanıyor</div>
+</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px 8px">
     <div>
       <div style="font-size:20px;font-weight:700">Kripto Sinyaller</div>
       <div style="font-size:11px;color:#8B949E;margin-top:2px" id="guncelleme">Yükleniyor...</div>
@@ -381,6 +396,7 @@ async function sinyalCek() {
     const fg = sinyaller[0] && sinyaller[0].sentiment;
     if (fg) guncelleFG(fg);
     guvenlikGuncelle();
+    sunGuncelle(sinyaller, sinyaller[0] && sinyaller[0].sentiment);
     render();
   } catch(e) {
     document.getElementById('guncelleme').textContent = 'Bağlantı hatası';
@@ -396,7 +412,65 @@ function guncelleFG(fg) {
   document.getElementById('fg-val').style.color = renk;
   badge.style.borderColor = renk;
 }
+function sunGuncelle(sinyaller, sentiment) {
+  var svg = document.getElementById('sun-svg');
+  var etiket = document.getElementById('piyasa-etiket');
+  var alt = document.getElementById('piyasa-alt');
+  var appAdi = document.getElementById('app-adi');
+  if (!svg) return;
 
+  var guclu  = sinyaller.filter(function(s) { return s.score >= 4; }).length;
+  var firsat = sinyaller.filter(function(s) { return s.isHighPotential; }).length;
+  var toplam = sinyaller.length;
+
+  var mod = 'notr';
+  if (toplam === 0) mod = 'notr';
+  else if (guclu >= 20 || firsat >= 10) mod = 'boga_guclu';
+  else if (guclu >= 8  || firsat >= 4)  mod = 'boga';
+  else if (toplam >= 5)                 mod = 'olumlu';
+  if (sentiment && sentiment.isExtremeFear)   mod = 'korku';
+  if (sentiment && sentiment.isExtremeGreed && guclu < 5) mod = 'uyari';
+
+  var renkler = {
+    boga_guclu: { core:'#FFD700', ray:'#FFD700', bg:'#1a1500', etiket:'#FFD700', adi:'#FFD700', txt:'BOĞA SEZONU', alt:'Güçlü yükseliş trendi — Fırsatlar bol!' },
+    boga:       { core:'#FF9500', ray:'#FF9500', bg:'#1a1000', etiket:'#FF9500', adi:'#FF9500', txt:'BOĞA PİYASASI', alt:'Alım sinyalleri güçlü — İyi fırsatlar var' },
+    olumlu:     { core:'#3FB950', ray:'#3FB950', bg:'#0d1a0d', etiket:'#3FB950', adi:'#3FB950', txt:'OLUMLu SEYIR', alt:'Piyasa yükseliş eğiliminde' },
+    notr:       { core:'#58A6FF', ray:'#58A6FF', bg:'#0d1520', etiket:'#58A6FF', adi:'#58A6FF', txt:'NÖTR PİYASA', alt:'Belirgin bir yön yok — Dikkatli ol' },
+    korku:      { core:'#8B5CF6', ray:'#8B5CF6', bg:'#100d1a', etiket:'#8B5CF6', adi:'#8B5CF6', txt:'KORKU SEVİYESİ', alt:'Aşırı korku var — Alım fırsatı doğabilir' },
+    uyari:      { core:'#F85149', ray:'#F85149', bg:'#1a0d0d', etiket:'#F85149', adi:'#F85149', txt:'AŞIRI AÇGÖZLÜLÜK', alt:'Dikkat — Düzeltme riski yüksek' }
+  };
+
+  var r = renkler[mod] || renkler['notr'];
+
+  var raylar = [0,45,90,135,180,225,270,315];
+  var svgIcerik = '<circle cx="32" cy="32" r="14" fill="' + r.core + '" opacity="0.95"/>';
+  raylar.forEach(function(aci) {
+    var rad = aci * Math.PI / 180;
+    var x1 = 32 + Math.cos(rad) * 19;
+    var y1 = 32 + Math.sin(rad) * 19;
+    var x2 = 32 + Math.cos(rad) * 28;
+    var y2 = 32 + Math.sin(rad) * 28;
+    svgIcerik += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + r.ray + '" stroke-width="3" stroke-linecap="round" opacity="0.8"/>';
+  });
+  var kucukRaylar = [22.5,67.5,112.5,157.5,202.5,247.5,292.5,337.5];
+  kucukRaylar.forEach(function(aci) {
+    var rad = aci * Math.PI / 180;
+    var x1 = 32 + Math.cos(rad) * 17;
+    var y1 = 32 + Math.sin(rad) * 17;
+    var x2 = 32 + Math.cos(rad) * 23;
+    var y2 = 32 + Math.sin(rad) * 23;
+    svgIcerik += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + r.ray + '" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>';
+  });
+  svgIcerik += '<circle cx="32" cy="32" r="10" fill="' + r.core + '" opacity="0.3"/>';
+
+  svg.innerHTML = svgIcerik;
+
+  document.getElementById('piyasa-etiket').textContent = r.txt;
+  document.getElementById('piyasa-etiket').style.color = r.etiket;
+  document.getElementById('piyasa-alt').textContent = r.alt;
+  document.getElementById('app-adi').style.color = r.adi;
+  document.querySelector('.piyasa-durum').style.background = r.bg;
+}
 function basari(s) {
   let b = 50 + (s.score||0)*7;
   if (s.rsi < 35) b += 8;
