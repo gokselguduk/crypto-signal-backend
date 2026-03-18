@@ -100,9 +100,9 @@ async function scanBatch(symbols, interval) {
       if (analysis1h.volume    && analysis1h.volume.isHigh)       konfirmSayisi++;
       if (sentiment.isExtremeFear || sentiment.isFear)            konfirmSayisi++;
 
-      if (netScore < 3)                                                    continue;
-      if (konfirmSayisi < 2)                                               continue;
-      if (analysis1h.rsi > 72)                                             continue;
+      if (netScore < 2)           continue;
+if (konfirmSayisi < 1)      continue;
+if (analysis1h.rsi > 78)    continue;                                             continue;
       if (analysis1h.volume && analysis1h.volume.ratio < 0.5)              continue;
 
       var finalScore      = netScore;
@@ -150,7 +150,7 @@ async function scanBatch(symbols, interval) {
     } catch (err) {
       console.log('HATA ' + symbols[i] + ': ' + err.message);
     }
-    await new Promise(function(r) { setTimeout(r, 500); });
+    await new Promise(function(r) { setTimeout(r, 800); });
   }
   return results;
 }
@@ -166,7 +166,7 @@ async function scanMarket(interval) {
   console.log('Tarama basladi — ' + allSymbols.length + ' parite');
 
   var results   = [];
-  var batchSize = 5;
+  var batchSize = 3;
 
   for (var i = 0; i < allSymbols.length; i += batchSize) {
     var batch        = allSymbols.slice(i, i + batchSize);
@@ -191,7 +191,7 @@ async function scanMarket(interval) {
 
 async function startAutoScan(interval, intervalMs) {
   if (!interval)   interval   = '1h';
-  if (!intervalMs) intervalMs = 1800000;
+  if (!intervalMs) intervalMs = 2700000;
 
   await fetchAllSymbols();
   console.log('Otomatik tarama basladi — her ' + (intervalMs / 60000) + ' dakikada bir');
