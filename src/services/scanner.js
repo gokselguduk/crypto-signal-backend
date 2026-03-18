@@ -1,10 +1,14 @@
-var binance = require('./binance');
-var indicators = require('../indicators');
+var binance        = require('./binance');
+var indicators     = require('../indicators');
+var fundingModule  = require('../indicators/fundingRate');
+var orderBookModule = require('../indicators/orderBook');
+var whaleModule    = require('../indicators/whaleAlert');
+var sentimentModule = require('../indicators/sentiment');
 
 var lastSignals = [];
 var subscribers = [];
-var isScanning = false;
-var allSymbols = [];
+var isScanning  = false;
+var allSymbols  = [];
 
 async function fetchAllSymbols() {
   allSymbols = [
@@ -62,35 +66,34 @@ async function scanBatch(symbols, interval) {
 
   for (var i = 0; i < symbols.length; i++) {
     try {
-      var candles1h   = await binance.getHistoricalCandles(symbols[i], '1h',  200);
-      var candles4h   = await binance.getHistoricalCandles(symbols[i], '4h',  100);
-      var analysis1h  = indicators.analyzeCandles(candles1h);
-      var analysis4h  = indicators.analyzeCandles(candles4h);
-      var funding     = await fundingModule.getFundingRate(symbols[i]);
-      var orderBook   = await orderBookModule.analyzeOrderBook(symbols[i]);
-      var whale       = await whaleModule.getWhaleActivity(symbols[i]);
-var sentimentModule = require('../indicators/sentiment');
+      var candles1h    = await binance.getHistoricalCandles(symbols[i], '1h', 200);
+      var candles4h    = await binance.getHistoricalCandles(symbols[i], '4h', 100);
+      var analysis1h   = indicators.analyzeCandles(candles1h);
+      var analysis4h   = indicators.analyzeCandles(candles4h);
+      var funding      = await fundingModule.getFundingRate(symbols[i]);
+      var orderBook    = await orderBookModule.analyzeOrderBook(symbols[i]);
+      var whale        = await whaleModule.getWhaleActivity(symbols[i]);
+
       var mtfScore = 0;
       if (analysis1h.score > 0 && analysis4h.score > 0) mtfScore = 2;
       if (analysis1h.score > 0 && analysis4h.score <= 0) mtfScore = -1;
       if (analysis1h.score > 0 && analysis4h.trend && analysis4h.trend.strength >= 2) mtfScore += 1;
 
       var extraScore = 0;
-      if (funding.isVeryNegative) extraScore += 2;
-      if (funding.isNegative)     extraScore += 1;
-      if (funding.isVeryPositive) extraScore -= 2;
-      if (orderBook.bullish)      extraScore += 2;
-      if (orderBook.buyWall)      extraScore += 1;
-      if (orderBook.bearish)      extraScore -= 2;
-      if (orderBook.sellWall)     extraScore -= 1;
-      if (whale.whaleBullish)     extraScore += 2;
-      if (whale.whaleBearish)     extraScore -= 2;
+      if (funding.isVeryNegative)                          extraScore += 2;
+      if (funding.isNegative)                              extraScore += 1;
+      if (funding.isVeryPositive)                          extraScore -= 2;
+      if (orderBook.bullish)                               extraScore += 2;
+      if (orderBook.buyWall)                               extraScore += 1;
+      if (orderBook.bearish)                               extraScore -= 2;
+      if (orderBook.sellWall)                              extraScore -= 1;
+      if (whale.whaleBullish)                              extraScore += 2;
+      if (whale.whaleBearish)                              extraScore -= 2;
       if (sentiment.isExtremeFear && analysis1h.score > 0) extraScore += 2;
       if (sentiment.isFear        && analysis1h.score > 0) extraScore += 1;
-      if (sentiment.isExtremeGreed) extraScore -= 1;
+      if (sentiment.isExtremeGreed)                        extraScore -= 1;
 
-      var finalScore = analysis1h.score + mtfScore + extraScore;
-
+      var finalScore  = analysis1h.score + mtfScore + extraScore;
       var tp1Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 2   / analysis1h.lastClose * 100).toFixed(2)) : 0;
       var tp2Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 3   / analysis1h.lastClose * 100).toFixed(2)) : 0;
       var tp3Pct      = analysis1h.atr ? parseFloat((analysis1h.atr.lastATR * 5   / analysis1h.lastClose * 100).toFixed(2)) : 0;
@@ -137,6 +140,7 @@ var sentimentModule = require('../indicators/sentiment');
   }
   return results;
 }
+
 async function scanMarket(interval) {
   if (!interval) interval = '1h';
   if (isScanning) {
@@ -147,13 +151,13 @@ async function scanMarket(interval) {
   isScanning = true;
   console.log('Tarama basladi — ' + allSymbols.length + ' parite');
 
-  var results = [];
+  var results   = [];
   var batchSize = 20;
 
   for (var i = 0; i < allSymbols.length; i += batchSize) {
-    var batch = allSymbols.slice(i, i + batchSize);
+    var batch        = allSymbols.slice(i, i + batchSize);
     var batchResults = await scanBatch(batch, interval);
-    results = results.concat(batchResults);
+    results          = results.concat(batchResults);
     console.log('Tarandi: ' + Math.min(i + batchSize, allSymbols.length) + '/' + allSymbols.length + ' — Sinyal: ' + results.length);
   }
 
@@ -164,7 +168,7 @@ async function scanMarket(interval) {
   });
 
   lastSignals = results;
-  isScanning = false;
+  isScanning  = false;
 
   broadcast({ type: 'scan_complete', data: results, time: new Date().toISOString() });
   console.log('Tarama tamamlandi — ' + results.length + ' sinyal');
@@ -172,7 +176,7 @@ async function scanMarket(interval) {
 }
 
 async function startAutoScan(interval, intervalMs) {
-  if (!interval) interval = '1h';
+  if (!interval)   interval   = '1h';
   if (!intervalMs) intervalMs = 300000;
 
   await fetchAllSymbols();
