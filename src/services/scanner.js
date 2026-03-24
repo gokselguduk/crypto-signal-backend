@@ -24,9 +24,9 @@ var allSymbols  = [];
 // YAPILANDIRMA
 // ─────────────────────────────────────────────
 var CONFIG = {
-  MIN_VOLUME_USDT:  50000000,
-  PARALLEL_LIMIT:   2,
-  REQUEST_DELAY_MS: 2000,
+  MIN_VOLUME_USDT:  10000000,
+  PARALLEL_LIMIT:   1,
+  REQUEST_DELAY_MS: 1000,
   SCAN_INTERVAL_MS: 45 * 60 * 1000
 };
 
