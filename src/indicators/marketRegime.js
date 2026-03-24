@@ -192,8 +192,7 @@ function calcRegimeScore(regime, dir1h) {
 async function analyzeRegime(symbol, candles1h, orderBook, volume, dir1h) {
   try {
     var regimeData     = detectRegime(candles1h);
-    var manipulation   = await detectManipulation(symbol);
-    var washTrade      = detectWashTrade(orderBook, volume);
+    var manipulation   = { isManipulated: false, reason: null, listingAgeDays: 999 };var washTrade      = detectWashTrade(orderBook, volume);
 
     var regimeScore    = calcRegimeScore(regimeData.regime, dir1h);
 
