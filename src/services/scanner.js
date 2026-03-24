@@ -24,9 +24,9 @@ var allSymbols  = [];
 // YAPILANDIRMA
 // ─────────────────────────────────────────────
 var CONFIG = {
-  MIN_VOLUME_USDT:  1000000,
-  PARALLEL_LIMIT:   3,
-  REQUEST_DELAY_MS: 1200,
+  MIN_VOLUME_USDT:  5000000,  // 1M'den 5M'e çıkardık → ~150 parite
+  PARALLEL_LIMIT:   2,         // 3'ten 2'ye düşürdük
+  REQUEST_DELAY_MS: 2000,      // 1200'den 2000'e çıkardık
   SCAN_INTERVAL_MS: 45 * 60 * 1000
 };
 
