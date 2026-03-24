@@ -24,10 +24,10 @@ var allSymbols  = [];
 // YAPILANDIRMA
 // ─────────────────────────────────────────────
 var CONFIG = {
-  MIN_VOLUME_USDT:  1000000,        // Min 1M USDT/gün
-  PARALLEL_LIMIT:   8,              // Aynı anda kaç parite
-  REQUEST_DELAY_MS: 200,            // Grup arası bekleme
-  SCAN_INTERVAL_MS: 45 * 60 * 1000 // 45 dakika
+  MIN_VOLUME_USDT:  1000000,
+  PARALLEL_LIMIT:   3,
+  REQUEST_DELAY_MS: 1200,
+  SCAN_INTERVAL_MS: 45 * 60 * 1000
 };
 
 // ─────────────────────────────────────────────
