@@ -156,7 +156,7 @@ function detectWashTrade(orderBook, volume) {
   var isHighVol  = volume.isHigh;
 
   // Yüksek hacim var ama delta neredeyse sıfır → alış=satış → wash trade
-  var isWashTrade = isHighVol && deltaRatio < 0.05;
+  var isWashTrade = isHighVol && deltaRatio < 0.02;
 
   return {
     isWashTrade: isWashTrade,
