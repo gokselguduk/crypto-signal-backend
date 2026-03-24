@@ -26,6 +26,7 @@ app.get('/api/silver', function(req, res) {
     .then(function(data) { res.json(data); })
     .catch(function(e) { res.status(500).json({ error: e.message }); });
 });
+
 app.get('/health', function(req, res) {
   res.json({ status: 'ok' });
 });
@@ -47,9 +48,9 @@ app.get('/api/backtest/:symbol/:interval', function(req, res) {
     .then(function(c) {
       res.json(Object.assign({ symbol: req.params.symbol, interval: req.params.interval },
         backtest.runBacktest(c, {
-          stopLossPercent:   parseFloat(req.query.stopLoss  || 2),
+          stopLossPercent:   parseFloat(req.query.stopLoss   || 2),
           takeProfitPercent: parseFloat(req.query.takeProfit || 4),
-          initialCapital:    parseFloat(req.query.capital   || 1000)
+          initialCapital:    parseFloat(req.query.capital    || 1000)
         })));
     })
     .catch(function(e) { res.status(500).json({ error: e.message }); });
@@ -73,8 +74,8 @@ app.get('/api/scan/latest', function(req, res) {
 });
 
 app.get('/api/scan/:interval', function(req, res) {
-  scanner.scanMarket(req.params.interval)
-    .then(function(r) { res.json({ interval: req.params.interval, count: r.length, signals: r }); })
+  scanner.scanMarket()
+    .then(function(r) { res.json({ count: r.length, signals: r }); })
     .catch(function(e) { res.status(500).json({ error: e.message }); });
 });
 
@@ -89,7 +90,7 @@ io.on('connection', function(socket) {
 });
 
 scanner.subscribe(function(data) { io.emit('scan_update', data); });
-scanner.startAutoScan('1h', 2700000);
+scanner.startAutoScan();
 
 var PORT = process.env.PORT || 3000;
 server.listen(PORT, function() { console.log('Sunucu calisiyor: http://localhost:' + PORT); });
