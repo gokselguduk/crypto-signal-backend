@@ -72,14 +72,14 @@ function calcDynamicThreshold(regime, sentiment) {
 function calcQualityGrade(confluenceScore, netScore, mtfDetay) {
   var grade = 'D';
 
-  if (confluenceScore >= 75 && netScore >= 8 && mtfDetay && mtfDetay.allAligned) {
-    grade = 'A'; // Mükemmel — tüm sistemler yeşil
-  } else if (confluenceScore >= 55 && netScore >= 5) {
-    grade = 'B'; // İyi
-  } else if (confluenceScore >= 35 && netScore >= 3) {
-    grade = 'C'; // Orta
+ if (confluenceScore >= 60 && netScore >= 6 && mtfDetay && mtfDetay.allAligned) {
+    grade = 'A';
+  } else if (confluenceScore >= 40 && netScore >= 4) {
+    grade = 'B';
+  } else if (confluenceScore >= 20 && netScore >= 2) {
+    grade = 'C';
   } else {
-    grade = 'D'; // Zayıf — gönderme
+    grade = 'D';
   }
 
   return grade;
